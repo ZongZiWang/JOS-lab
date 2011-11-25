@@ -20,6 +20,8 @@
 
 #define USED(x)		(void)(x)
 
+#define LAB4_CHALLENGE4
+
 // libos.c or entry.S
 extern char *binaryname;
 extern volatile struct Env *env;
@@ -29,6 +31,15 @@ void	exit(void);
 
 // pgfault.c
 void	set_pgfault_handler(void (*handler)(struct UTrapframe *utf));
+
+#if defined LAB4_CHALLENGE4
+// gpfault.c
+void	set_gpfault_handler(void (*handler)(struct UTrapframe *utf));
+// divide.c
+void	set_divide_handler(void (*handler)(struct UTrapframe *utf));
+// illop.c
+void	set_illop_handler(void (*handler)(struct UTrapframe *utf));
+#endif
 
 // readline.c
 char*	readline(const char *buf);
@@ -42,6 +53,11 @@ void	sys_yield(void);
 static envid_t sys_exofork(void);
 int	sys_env_set_status(envid_t env, int status);
 int	sys_env_set_pgfault_upcall(envid_t env, void *upcall);
+#if defined LAB4_CHALLENGE4
+int	sys_env_set_gpfault_upcall(envid_t env, void *upcall);
+int	sys_env_set_divide_upcall(envid_t env, void *upcall);
+int	sys_env_set_illop_upcall(envid_t env, void *upcall);
+#endif
 int	sys_page_alloc(envid_t env, void *pg, int perm);
 int	sys_page_map(envid_t src_env, void *src_pg,
 		     envid_t dst_env, void *dst_pg, int perm);

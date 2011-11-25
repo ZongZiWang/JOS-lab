@@ -9,6 +9,8 @@
 #include <inc/trap.h>
 #include <inc/mmu.h>
 
+#define LAB4_CHALLENGE4
+
 /* The kernel's interrupt descriptor table */
 extern struct Gatedesc idt[];
 
@@ -17,5 +19,11 @@ void print_regs(struct PushRegs *regs);
 void print_trapframe(struct Trapframe *tf);
 void page_fault_handler(struct Trapframe *);
 void backtrace(struct Trapframe *);
+
+#if defined LAB4_CHALLENGE4
+void divide_by_zero_handler(struct Trapframe *);
+void general_protection_fault_handler(struct Trapframe *);
+void illegal_opcode_handler(struct Trapframe * tf);
+#endif
 
 #endif /* JOS_KERN_TRAP_H */

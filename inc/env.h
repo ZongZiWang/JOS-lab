@@ -8,6 +8,8 @@
 #include <inc/trap.h>
 #include <inc/memlayout.h>
 
+#define LAB4_CHALLENGE4
+
 typedef int32_t envid_t;
 
 // An environment ID 'envid_t' has three parts:
@@ -49,6 +51,12 @@ struct Env {
 
 	// Exception handling
 	void *env_pgfault_upcall;	// page fault upcall entry point
+#if defined LAB4_CHALLENGE4
+	// Challenge's Exception handling
+	void *env_divide_upcall;
+	void *env_gpfault_upcall;
+	void *env_illop_upcall;
+#endif
 
 	// Lab 4 IPC
 	bool env_ipc_recving;		// env is blocked receiving

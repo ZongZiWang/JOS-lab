@@ -3,6 +3,8 @@
 #include <inc/syscall.h>
 #include <inc/lib.h>
 
+#define LAB4_CHALLENGE4
+
 static inline int32_t
 syscall(int num, int check, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5)
 {
@@ -98,6 +100,28 @@ sys_env_set_pgfault_upcall(envid_t envid, void *upcall)
 {
 	return syscall(SYS_env_set_pgfault_upcall, 1, envid, (uint32_t) upcall, 0, 0, 0);
 }
+
+#if defined LAB4_CHALLENGE4
+
+int
+sys_env_set_gpfault_upcall(envid_t envid, void *upcall)
+{
+	return syscall(SYS_env_set_gpfault_upcall, 1, envid, (uint32_t) upcall, 0, 0, 0);
+}
+
+int
+sys_env_set_divide_upcall(envid_t envid, void *upcall)
+{
+	return syscall(SYS_env_set_divide_upcall, 1, envid, (uint32_t) upcall, 0, 0, 0);
+}
+
+int
+sys_env_set_illop_upcall(envid_t envid, void *upcall)
+{
+	return syscall(SYS_env_set_illop_upcall, 1, envid, (uint32_t) upcall, 0, 0, 0);
+}
+
+#endif
 
 int
 sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, int perm)

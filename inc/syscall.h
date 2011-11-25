@@ -1,6 +1,8 @@
 #ifndef JOS_INC_SYSCALL_H
 #define JOS_INC_SYSCALL_H
 
+#define LAB4_CHALLENGE4
+
 /* system call numbers */
 enum
 {
@@ -17,7 +19,13 @@ enum
 	SYS_yield,
 	SYS_ipc_try_send,
 	SYS_ipc_recv,
+#if defined LAB4_CHALLENGE4
+	SYS_env_set_gpfault_upcall,
+	SYS_env_set_divide_upcall,
+	SYS_env_set_illop_upcall,
+#endif
 	NSYSCALLS
 };
+
 
 #endif /* !JOS_INC_SYSCALL_H */

@@ -7,6 +7,7 @@
 // It is one of the bits explicitly allocated to user processes (PTE_AVAIL).
 #define PTE_COW		0x800
 
+extern void _pgfault_upcall(void);
 //
 // Custom page fault handler - if faulting page is copy-on-write,
 // map in our own private writable copy.
@@ -24,6 +25,9 @@ pgfault(struct UTrapframe *utf)
 	//   Use the read-only page table mappings at vpt
 	//   (see <inc/memlayout.h>).
 
+	if ((err & FEC_WR) != FEC_WR) panic("lib/fork.c/pgfault(): the faulting access was not a write!"); 
+	if ((vpd[VPD(addr)] & PTE_P) != PTE_P && (vpt[VPN(addr)] & PTE_COW) != PTE_COW) panic("lib/fork.c/pgfault(): the page is not a copy-on-write page!");
+
 	// LAB 4: Your code here.
 
 	// Allocate a new page, map it at a temporary location (PFTEMP),
@@ -32,6 +36,19 @@ pgfault(struct UTrapframe *utf)
 	// Hint:
 	//   You should make three system calls.
 	//   No need to explicitly delete the old page's mapping.
+
+	r = sys_page_alloc(0, (void *)PFTEMP, (PTE_U|PTE_P|PTE_W));
+	if (r < 0) panic("lib/fork.c/pgfault(): sys_page_alloc failed. %e", r);
+		
+	memmove((void *)PFTEMP, ROUNDDOWN(addr, PGSIZE), PGSIZE);
+
+	r = sys_page_map(0, (void *)PFTEMP, 0, ROUNDDOWN(addr, PGSIZE), (PTE_U|PTE_P|PTE_W));
+	if (r < 0) panic("lib/fork.c/pgfault(): sys_page_map failed. %e", r);
+
+	r = sys_page_unmap(0, (void *)PFTEMP);
+	if (r < 0) panic("lib/fork.c/pgfault(): sys_page_unmap failed. %e", r);
+
+	return ;
 
 	// LAB 4: Your code here.
 
@@ -53,6 +70,23 @@ static int
 duppage(envid_t envid, unsigned pn)
 {
 	int r;
+
+	void * addr = (void *) (pn * PGSIZE);
+
+	pte_t pte = vpt[pn];
+
+	if ((pte & PTE_P) == 0 || (pte & PTE_U) == 0) panic("lib/fork.c/duppage(): pte unpresent or unuser!");
+	if ((pte & PTE_COW) == PTE_COW || (pte & PTE_W) == PTE_W) {
+		r = sys_page_map(0, addr, envid, addr, PTE_COW|PTE_P|PTE_U);
+		if (r < 0) panic("lib/fork.c/duppage(): COW addr %08x's page_map from envid %08x to envid %08x failed.\n", addr, sys_getenvid(), envid);
+		r = sys_page_map(0, addr, 0, addr, PTE_COW|PTE_P|PTE_U);
+		if (r < 0) panic("lib/fork.c/duppage(): COW addr %08x's page_map from envid %08x to envid %08x failed.\n", addr, sys_getenvid(), sys_getenvid());
+	} else {
+		r = sys_page_map(0, addr, envid, addr, PTE_P|PTE_U);
+		if (r < 0) panic("lib/fork.c/duppage(): READONLY addr %08x's page_map from envid %08x to envid %08x failed.\n", addr, sys_getenvid(), envid);
+	}
+
+	return 0;
 
 	// LAB 4: Your code here.
 	panic("duppage not implemented");
@@ -78,6 +112,31 @@ duppage(envid_t envid, unsigned pn)
 envid_t
 fork(void)
 {
+	set_pgfault_handler(pgfault);
+
+	envid_t envid = sys_exofork();
+	if (envid < 0) panic("lib/fork.c/fork(): sys exofork failed. %e", envid);
+
+	if (envid == 0) {
+		env = &envs[ENVX(sys_getenvid())];
+		return 0;
+	}
+
+	uintptr_t i;
+
+	for (i = UTEXT; i < UXSTACKTOP-PGSIZE; i += PGSIZE) {
+		if ((vpd[VPD(i)] & PTE_P) && (vpt[VPN(i)] & PTE_P) && (vpt[VPN(i)] & PTE_U)) duppage(envid, VPN(i));
+	}
+	
+	int r = sys_page_alloc(envid, (void *)(UXSTACKTOP-PGSIZE), PTE_P|PTE_U|PTE_W);
+	if (r < 0) panic("lib/fork.c/fork(): sys page alloc for child UXSTACK failed: %e", r);
+	sys_env_set_pgfault_upcall(envid, _pgfault_upcall);
+		
+	r = sys_env_set_status(envid, ENV_RUNNABLE);
+	if (r < 0) panic("lib/fork.c/fork(): sys env set status failed. %e", r);
+
+	return envid;
+	
 	// LAB 4: Your code here.
 	panic("fork not implemented");
 }

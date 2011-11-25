@@ -8,6 +8,19 @@
 #include <inc/stdarg.h>
 #include <inc/error.h>
 
+#define GRAY 8;
+#define WHITE 7;
+#define INDIGO 1;
+#define GREEN 2;
+#define RED 4;
+#define SHINE 15;
+#define ORANGE 12;
+#define BLUE 3;
+#define PURPLE 5;
+
+int cga_putc_color = 0;
+int cga_putc_background = 0;
+
 /*
  * Space or zero padding and a field width are supported for the numeric
  * formats only. 
@@ -163,6 +176,53 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 			putch(va_arg(ap, int), putdat);
 			break;
 
+		case 'B':
+		// background color
+			if (fmt[0] >= '0' && fmt[0] <= '9')
+			{
+				//color by number
+				cga_putc_background = ((fmt[0] - '0') * 10 + fmt[1] - '0') * 10 + fmt[2] - '0';
+			}else{
+				//color preset
+				if (fmt[0] == 'r') cga_putc_background = RED else
+				if (fmt[0] == 'b') cga_putc_background = BLUE else
+				if (fmt[0] == 'g' && fmt[2] == 'a') cga_putc_background= GRAY else
+				if (fmt[0] == 'g') cga_putc_background= GREEN else
+				if (fmt[0] == 'w') cga_putc_background= WHITE else
+				if (fmt[0] == 's') cga_putc_background= SHINE else
+				if (fmt[0] == 'p') cga_putc_background= PURPLE else
+				if (fmt[0] == 'o') cga_putc_background= ORANGE else
+				if (fmt[0] == 'i') cga_putc_background= INDIGO else
+				cga_putc_background= WHITE;
+			}
+			fmt += 3;
+			break;
+			
+			
+		// letter color
+		case 'C':
+
+			if (fmt[0] >= '0' && fmt[0] <= '9')
+			{
+				//color by number
+				cga_putc_color = ((fmt[0] - '0') * 10 + fmt[1] - '0') * 10 + fmt[2] - '0';
+			}else {
+				//color preset
+				if (fmt[0] == 'r') cga_putc_color = RED else
+				if (fmt[0] == 'b') cga_putc_color = BLUE else
+				if (fmt[0] == 'g' && fmt[2] == 'a') cga_putc_color = GRAY else
+				if (fmt[0] == 'g') cga_putc_color = GREEN else
+				if (fmt[0] == 'w') cga_putc_color = WHITE else
+				if (fmt[0] == 's') cga_putc_color = SHINE else
+				if (fmt[0] == 'p') cga_putc_color = PURPLE else
+				if (fmt[0] == 'o') cga_putc_color = ORANGE else
+				if (fmt[0] == 'i') cga_putc_color = INDIGO else
+				cga_putc_color = WHITE;
+			}
+			fmt += 3;
+			break;
+				
+
 		// error message
 		case 'e':
 			err = va_arg(ap, int);
@@ -209,10 +269,9 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 		// (unsigned) octal
 		case 'o':
 			// Replace this with your code.
-			putch('X', putdat);
-			putch('X', putdat);
-			putch('X', putdat);
-			break;
+			num = getuint(&ap, lflag);
+			base = 8;
+			goto number;
 
 		// pointer
 		case 'p':

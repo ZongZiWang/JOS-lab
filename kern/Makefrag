@@ -53,7 +53,11 @@ KERN_BINFILES :=	user/idle \
 			user/pingpong \
 			user/pingpongs \
 			user/primes \
-			user/hello
+			user/hello \
+			user/zongzi \
+			user/lab4divide \
+			user/lab4gpfault \
+			user/lab4illop
 
 KERN_OBJFILES := $(patsubst %.c, $(OBJDIR)/%.o, $(KERN_SRCFILES))
 KERN_OBJFILES := $(patsubst %.S, $(OBJDIR)/%.o, $(KERN_OBJFILES))
