@@ -20,7 +20,7 @@
 
 #define USED(x)		(void)(x)
 
-#define LAB4_CHALLENGE4
+#include <inc/challenge.h>
 
 // libos.c or entry.S
 extern char *binaryname;
@@ -32,7 +32,15 @@ void	exit(void);
 // pgfault.c
 void	set_pgfault_handler(void (*handler)(struct UTrapframe *utf));
 
-#if defined LAB4_CHALLENGE4
+#ifdef LAB4_CHALLENGE1
+// priority.c
+void set_priority(uint32_t priority);
+#endif
+#ifdef LAB4_CHALLENGE3
+// checkpoint.c
+envid_t env_save(void);
+#endif
+#ifdef LAB4_CHALLENGE4
 // gpfault.c
 void	set_gpfault_handler(void (*handler)(struct UTrapframe *utf));
 // divide.c
@@ -53,10 +61,20 @@ void	sys_yield(void);
 static envid_t sys_exofork(void);
 int	sys_env_set_status(envid_t env, int status);
 int	sys_env_set_pgfault_upcall(envid_t env, void *upcall);
-#if defined LAB4_CHALLENGE4
+#ifdef LAB4_CHALLENGE1
+int sys_env_set_priority(envid_t env, uint32_t priority);
+#endif
+#ifdef LAB4_CHALLENGE3
+int sys_env_restore(envid_t env);
+#endif
+#ifdef LAB4_CHALLENGE4
 int	sys_env_set_gpfault_upcall(envid_t env, void *upcall);
 int	sys_env_set_divide_upcall(envid_t env, void *upcall);
 int	sys_env_set_illop_upcall(envid_t env, void *upcall);
+#endif
+#ifdef LAB4_CHALLENGE6
+int sys_page_map_update_perm(envid_t src_env, void *src, envid_t dst_env, void *dst_pg, int perm);
+int sys_uxstack_pgfault_status(envid_t envid, void *pg, int perm, void *upcall, int status); 
 #endif
 int	sys_page_alloc(envid_t env, void *pg, int perm);
 int	sys_page_map(envid_t src_env, void *src_pg,

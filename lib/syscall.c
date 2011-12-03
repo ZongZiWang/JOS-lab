@@ -3,7 +3,7 @@
 #include <inc/syscall.h>
 #include <inc/lib.h>
 
-#define LAB4_CHALLENGE4
+#include <inc/challenge.h>
 
 static inline int32_t
 syscall(int num, int check, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5)
@@ -101,7 +101,23 @@ sys_env_set_pgfault_upcall(envid_t envid, void *upcall)
 	return syscall(SYS_env_set_pgfault_upcall, 1, envid, (uint32_t) upcall, 0, 0, 0);
 }
 
-#if defined LAB4_CHALLENGE4
+#ifdef LAB4_CHALLENGE1
+int
+sys_env_set_priority(envid_t envid, uint32_t priority)
+{
+	return syscall(SYS_env_set_priority, 1, envid, priority, 0, 0, 0);
+}
+#endif
+
+#ifdef LAB4_CHALLENGE3
+int
+sys_env_restore(envid_t envid)
+{
+	return syscall(SYS_env_restore, 1, envid, 0, 0, 0, 0);
+}
+#endif
+
+#ifdef LAB4_CHALLENGE4
 
 int
 sys_env_set_gpfault_upcall(envid_t envid, void *upcall)
@@ -121,6 +137,20 @@ sys_env_set_illop_upcall(envid_t envid, void *upcall)
 	return syscall(SYS_env_set_illop_upcall, 1, envid, (uint32_t) upcall, 0, 0, 0);
 }
 
+#endif
+
+#ifdef LAB4_CHALLENGE6
+int
+sys_page_map_update_perm(envid_t srcenv, void *srcva, envid_t dstenv, void *dstva, int perm)
+{
+	return syscall(SYS_page_map_update_perm, 1, srcenv, (uint32_t) srcva, dstenv, (uint32_t) dstva, perm);
+}
+
+int
+sys_uxstack_pgfault_status(envid_t envid, void * va, int perm, void * upcall, int status)
+{
+	return syscall(SYS_uxstack_pgfault_status, 1, envid, (uint32_t)va, (int)perm, (uint32_t)upcall, status);
+}
 #endif
 
 int

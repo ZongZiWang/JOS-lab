@@ -18,8 +18,12 @@
 #define BLUE 3;
 #define PURPLE 5;
 
+#include <inc/challenge.h>
+
+#ifdef LAB1_CHALLENGE1
 int cga_putc_color = 0;
 int cga_putc_background = 0;
+#endif
 
 /*
  * Space or zero padding and a field width are supported for the numeric
@@ -176,6 +180,7 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 			putch(va_arg(ap, int), putdat);
 			break;
 
+#ifdef LAB1_CHALLENGE1
 		case 'B':
 		// background color
 			if (fmt[0] >= '0' && fmt[0] <= '9')
@@ -221,7 +226,7 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 			}
 			fmt += 3;
 			break;
-				
+#endif
 
 		// error message
 		case 'e':

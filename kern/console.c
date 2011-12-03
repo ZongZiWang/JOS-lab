@@ -9,6 +9,8 @@
 #include <kern/console.h>
 #include <kern/picirq.h>
 
+#include <inc/challenge.h>
+
 static void cons_intr(int (*proc)(void));
 static void cons_putc(int c);
 
@@ -158,17 +160,22 @@ cga_init(void)
 	crt_pos = pos;
 }
 
+#ifdef LAB1_CHALLENGE1
 extern int cga_putc_color;
 extern int cga_putc_background;
+#endif
 
 static void
 cga_putc(int c)
 {
+
+#ifdef LAB1_CHALLENGE1
 	//cga_putc_color means the letter color after %C
 	//cga_putc_color means the background color after %B
 	
 	c += cga_putc_color << 8;
 	c += cga_putc_background << 12;
+#endif
 
 	// if no attribute given, then use black on white
 	if (!(c & ~0xFF))

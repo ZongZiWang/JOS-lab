@@ -20,7 +20,9 @@ LIB_SRCFILES :=		$(LIB_SRCFILES) \
 			lib/divide.c \
 			lib/deentry.S \
 			lib/illop.c \
-			lib/ioentry.S
+			lib/ioentry.S \
+			lib/priority.c \
+			lib/checkpoint.c
 
 
 

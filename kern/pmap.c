@@ -10,7 +10,6 @@
 #include <kern/kclock.h>
 #include <kern/env.h>
 
-
 // These variables are set by i386_detect_memory()
 static physaddr_t maxpa;	// Maximum physical address
 size_t npage;			// Amount of physical memory (in pages)
@@ -250,8 +249,7 @@ i386_vm_init(void)
 
 	// Check that the initial page directory has been set up correctly.
 	check_boot_pgdir();
-
-	//boot_map_segment(pgdir, KERNBASE, ~KERNBASE+1, (physaddr_t)0, PTE_W|PTE_PS);
+	
 	//////////////////////////////////////////////////////////////////////
 	// On x86, segmentation maps a VA to a LA (linear addr) and
 	// paging maps the LA to a PA.  I.e. VA => LA => PA.  If paging is
@@ -282,10 +280,6 @@ i386_vm_init(void)
 	// Current mapping: KERNBASE+x => x => x.
 	// (x < 4MB so uses paging pgdir[0])
 	
-	//uint32_t cr4 = rcr4();
-	//cr4 |= CR4_PSE;
-	//lcr4(cr4);
-
 	// Reload all segment registers.
 	asm volatile("lgdt gdt_pd");
 	asm volatile("movw %%ax,%%gs" :: "a" (GD_UD|3));
@@ -582,9 +576,6 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 	pte_t * pt = pgdir + PDX(va);
 
 	if (*pt & PTE_P) {
-		//if (*pt & PTE_PS) {
-		//	return pt;
-		//}
 		return (pte_t*) KADDR(PTE_ADDR(*pt)) + PTX(va);
 	}
 
@@ -664,15 +655,9 @@ boot_map_segment(pde_t *pgdir, uintptr_t la, size_t size, physaddr_t pa, int per
 	for (i = 0; i < size; ) {
 		pte = pgdir_walk(pgdir, (void*) la, 1);
 		*pte = pa|perm|PTE_P;
-//		if (perm & PTE_PS) {
-//			pa += EXTPGSIZE;
-//			la += EXTPGSIZE;
-//			i += EXTPGSIZE;
-//		} else {
-			pa += PGSIZE;
-			la += PGSIZE;
-			i += PGSIZE;
-//		}
+		pa += PGSIZE;
+		la += PGSIZE;
+		i += PGSIZE;
 	}
 	// Fill this function in
 }

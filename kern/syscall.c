@@ -12,7 +12,7 @@
 #include <kern/console.h>
 #include <kern/sched.h>
 
-#define LAB4_CHALLENGE4
+#include <inc/challenge.h>
 
 // Print a string to the system console.
 // The string is exactly 'len' characters long.
@@ -154,7 +154,41 @@ sys_env_set_pgfault_upcall(envid_t envid, void *func)
 	panic("sys_env_set_pgfault_upcall not implemented");
 }
 
-#if defined LAB4_CHALLENGE4
+#ifdef LAB4_CHALLENGE1
+static int
+sys_env_set_priority(envid_t envid, uint32_t priority)
+{
+
+	struct Env * env;
+	int r = envid2env(envid, &env, 1);
+	if (r < 0) return r;
+	
+	env->env_priority = priority;
+
+	return 0;
+}
+#endif
+
+#ifdef LAB4_CHALLENGE3
+int
+sys_env_restore(envid_t envid)
+{
+	int r;
+
+	struct Env * env;
+	r = envid2env(envid, &env, 0);
+	if (r < 0) return r;
+
+	if (env->env_status != ENV_NOT_RUNNABLE) return -E_INVAL;
+	env->env_status = ENV_RUNNABLE;
+
+	sys_env_destroy(0);
+
+	return 0;
+}
+#endif
+
+#ifdef LAB4_CHALLENGE4
 
 static int
 sys_env_set_gpfault_upcall(envid_t envid, void *func)
@@ -300,9 +334,6 @@ sys_page_map(envid_t srcenvid, void *srcva,
 	if ((perm & PTE_W) && (*pte & PTE_W) == 0) return -E_INVAL;
 
 	r = page_insert(dstenv->env_pgdir, pp, dstva, perm);
-		
-	pp = page_lookup(dstenv->env_pgdir, dstva, &pte);
-	
 	if (r < 0) {
 		page_free(pp);
 		return r;
@@ -340,6 +371,12 @@ sys_page_unmap(envid_t envid, void *va)
 	// LAB 4: Your code here.
 	panic("sys_page_unmap not implemented");
 }
+
+#ifdef LAB4_CHALLENGE8
+envid_t waiting_srcenv_ids[NENV];
+envid_t waiting_dstenv_ids[NENV];
+int waiting_env_num = 0;
+#endif
 
 // Try to send 'value' to the target env 'envid'.
 // If srcva < UTOP, then also send page currently mapped at 'srcva',
@@ -382,6 +419,61 @@ sys_page_unmap(envid_t envid, void *va)
 static int
 sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, unsigned perm)
 {
+
+	struct Env * srcenv;
+	int r = envid2env(0, &srcenv, 1);
+	if (r < 0) return r;
+	struct Env * dstenv;
+	r = envid2env(envid, &dstenv, 0);
+	if (r < 0) return r;
+
+#ifdef LAB4_CHALLENGE8
+	if (!dstenv->env_ipc_recving || dstenv->env_ipc_from != 0) {
+		if (waiting_env_num == NENV) panic("Waiting IPC Overflow!");
+		waiting_srcenv_ids[waiting_env_num] = srcenv->env_id;
+		waiting_dstenv_ids[waiting_env_num++] = envid;
+		srcenv->env_status = ENV_NOT_RUNNABLE;
+		sched_yield();
+	}
+#else
+	if (!dstenv->env_ipc_recving || dstenv->env_ipc_from != 0) return -E_IPC_NOT_RECV;
+#endif
+
+	if (((uint32_t)srcva) < UTOP && ((uint32_t)dstenv->env_ipc_dstva) < UTOP) {
+		if (((uint32_t)srcva) % PGSIZE != 0) return -E_INVAL;
+		if ((perm & PTE_U) == 0) return -E_INVAL;
+		if ((perm & PTE_P) == 0) return -E_INVAL;
+		if ((perm | PTE_USER) != PTE_USER) return -E_INVAL;
+
+		struct Page * pp;
+		pte_t * pte;
+		pp = page_lookup(srcenv->env_pgdir, srcva, &pte);
+		if (pp == NULL) return -E_INVAL;
+
+		if ((perm & PTE_W) && (*pte & PTE_W) == 0) return -E_INVAL;
+
+		r = page_insert(dstenv->env_pgdir, pp, dstenv->env_ipc_dstva, perm);
+		if (r < 0) {
+			page_free(pp);
+			return r;
+		}
+
+		dstenv->env_ipc_perm = perm;
+
+	} else dstenv->env_ipc_perm = 0;
+	
+	dstenv->env_ipc_recving = 0;
+	dstenv->env_ipc_from = sys_getenvid();
+	dstenv->env_ipc_value = value;
+	dstenv->env_status = ENV_RUNNABLE;
+	dstenv->env_tf.tf_regs.reg_eax = 0;
+
+#ifdef LAB4_CHALLENGE7
+	srcenv->env_ipc_sended = (srcenv->env_ipc_sended + 1) % 0xffffffff;
+#endif
+
+	return 0;
+	
 	// LAB 4: Your code here.
 	panic("sys_ipc_try_send not implemented");
 }
@@ -400,11 +492,44 @@ sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, unsigned perm)
 static int
 sys_ipc_recv(void *dstva)
 {
+
+	struct Env * dstenv;
+	int r = envid2env(0, &dstenv, 1);
+	if (r < 0) return r;
+	
+	dstenv->env_ipc_from = 0;
+	dstenv->env_ipc_recving = 1;
+	dstenv->env_ipc_dstva = dstva;
+	dstenv->env_status = ENV_NOT_RUNNABLE;
+	
+	if (((uint32_t)dstva) < UTOP && ((uint32_t)dstva) % PGSIZE != 0) return -E_INVAL;
+
+#ifdef LAB4_CHALLENGE8
+	int i;
+	for (i = 0; i < waiting_env_num; i++) if (waiting_dstenv_ids[i] == dstenv->env_id) {
+		envid_t srcenvid = waiting_srcenv_ids[i];
+		struct Env * srcenv;
+		int r = envid2env(srcenvid, &srcenv, 0);
+		if (r < 0) return r;
+		srcenv->env_tf.tf_regs.reg_eax = -E_IPC_NOT_RECV;
+		srcenv->env_status = ENV_RUNNABLE;
+		break;
+	}
+	if (i < waiting_env_num) {
+		for (; i < waiting_env_num-1; i++) {
+			waiting_srcenv_ids[i] = waiting_srcenv_ids[i+1];
+			waiting_dstenv_ids[i] = waiting_dstenv_ids[i+1];
+		}
+		waiting_env_num--;
+	}
+#endif
+		
+	sched_yield();
+
 	// LAB 4: Your code here.
 	panic("sys_ipc_recv not implemented");
 	return 0;
 }
-
 
 
 // Dispatches to the correct kernel function, passing the arguments.
@@ -414,6 +539,8 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 	// Call the function corresponding to the 'syscallno' parameter.
 	// Return any appropriate return value.
 	// LAB 3: Your code here.
+
+	int r;
 
 	switch (syscallno) {
 		case SYS_cputs:
@@ -440,7 +567,15 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 			return sys_env_set_status((envid_t)a1, (int)a2);
 		case SYS_env_set_pgfault_upcall:
 			return sys_env_set_pgfault_upcall(((envid_t)a1), ((void *)a2));
-#if defined LAB4_CHALLENGE4
+#ifdef LAB4_CHALLENGE1
+		case SYS_env_set_priority:
+			return sys_env_set_priority((envid_t)a1, (uint32_t)a2);
+#endif
+#ifdef LAB4_CHALLENGE3
+		case SYS_env_restore:
+			return sys_env_restore((envid_t)a1);
+#endif
+#ifdef LAB4_CHALLENGE4
 		case SYS_env_set_gpfault_upcall:
 			return sys_env_set_gpfault_upcall(((envid_t)a1), ((void *)a2));
 		case SYS_env_set_divide_upcall:
@@ -448,6 +583,20 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 		case SYS_env_set_illop_upcall:
 			return sys_env_set_illop_upcall(((envid_t)a1), ((void *)a2));
 #endif
+#ifdef LAB4_CHALLENGE6
+		case SYS_page_map_update_perm:
+			if ((r = sys_page_map((envid_t)a1, (void *)a2, (envid_t)a3, (void *)a4, (int)a5)) < 0) return r;
+			return sys_page_map((envid_t)a1, (void *)a2, (envid_t)a1, (void *)a4, (int)a5);
+		case SYS_uxstack_pgfault_status:
+			if ((r = sys_page_alloc((envid_t)a1, (void *)a2, (int)a3)) < 0) return r;
+			if ((r = sys_env_set_pgfault_upcall((envid_t)a1, (void *)a4)) < 0) return r;
+			if ((int)a5 != ENV_NOT_SET) r = sys_env_set_status((envid_t)a1, (int)a5);
+			return r;
+#endif
+		case SYS_ipc_try_send:
+			return sys_ipc_try_send((envid_t)a1, (uint32_t)a2, (void *)a3, (unsigned)a4);
+		case SYS_ipc_recv:
+			return sys_ipc_recv((void *)a1);
 		case NSYSCALLS:
 		default:
 			return -E_INVAL;

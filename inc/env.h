@@ -8,7 +8,7 @@
 #include <inc/trap.h>
 #include <inc/memlayout.h>
 
-#define LAB4_CHALLENGE4
+#include <inc/challenge.h>
 
 typedef int32_t envid_t;
 
@@ -37,6 +37,10 @@ typedef int32_t envid_t;
 #define ENV_RUNNABLE		1
 #define ENV_NOT_RUNNABLE	2
 
+#ifdef LAB4_CHALLENGE6
+#define ENV_NOT_SET 3
+#endif
+
 struct Env {
 	struct Trapframe env_tf;	// Saved registers
 	LIST_ENTRY(Env) env_link;	// Free list link pointers
@@ -51,11 +55,17 @@ struct Env {
 
 	// Exception handling
 	void *env_pgfault_upcall;	// page fault upcall entry point
-#if defined LAB4_CHALLENGE4
+#ifdef LAB4_CHALLENGE1
+	uint32_t env_priority;
+#endif
+#ifdef LAB4_CHALLENGE4
 	// Challenge's Exception handling
 	void *env_divide_upcall;
 	void *env_gpfault_upcall;
 	void *env_illop_upcall;
+#endif
+#ifdef LAB4_CHALLENGE7
+	uint32_t env_ipc_sended;
 #endif
 
 	// Lab 4 IPC
@@ -65,5 +75,12 @@ struct Env {
 	envid_t env_ipc_from;		// envid of the sender	
 	int env_ipc_perm;		// perm of page mapping received
 };
+
+#ifdef LAB4_CHALLENGE1
+#define PRIORITY_HIGH 0x10000
+#define PRIORITY_DEFAULT 0x1000
+#define PRIORITY_MIDDLE 0x100
+#define PRIORITY_LOW 0x10
+#endif
 
 #endif // !JOS_INC_ENV_H

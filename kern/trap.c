@@ -12,8 +12,7 @@
 #include <kern/kclock.h>
 #include <kern/picirq.h>
 
-#define LAB3_CHALLENGE1
-#define LAB4_CHALLENGE4
+#include <inc/challenge.h>
 
 static struct Taskstate ts;
 
@@ -61,7 +60,7 @@ static const char *trapname(int trapno)
 }
 
 
-#if defined LAB3_CHALLENGE1
+#ifdef LAB3_CHALLENGE1
 //Challenge 1
 extern struct Gatedesc myidt[256];
 //extern struct Pseudodesc myidt_pd;
@@ -78,13 +77,12 @@ idt_init(void)
 	
 	// LAB 3: Your code here.
 
-#if defined LAB3_CHALLENGE1
+#ifdef LAB3_CHALLENGE1
 /*
 ===============================================
 After Challenge 1:
 ===============================================
 */
-	cprintf("Challenge 1 succeeded!\n");
 	int i;
 	for (i = 0; i < 256; i++) {
 		if (*((uint32_t*)(myidt+i)) != 0) {
@@ -123,13 +121,29 @@ Without Challenge 1:
 	extern void trap_align();
 	extern void trap_mchk();
 	extern void trap_simderr();
+	extern void trap_irq0();
+	extern void trap_irq1();
+	extern void trap_irq2();
+	extern void trap_irq3();
+	extern void trap_irq4();
+	extern void trap_irq5();
+	extern void trap_irq6();
+	extern void trap_irq7();
+	extern void trap_irq8();
+	extern void trap_irq9();
+	extern void trap_irq10();
+	extern void trap_irq11();
+	extern void trap_irq12();
+	extern void trap_irq13();
+	extern void trap_irq14();
+	extern void trap_irq15();
 	extern void trap_syscall();
-
+	
 	SETGATE (idt[T_DIVIDE], 0, GD_KT, trap_divide, 0);
-	SETGATE (idt[T_DEBUG], 1, GD_KT, trap_debug, 0);
+	SETGATE (idt[T_DEBUG], 0, GD_KT, trap_debug, 0);
 	SETGATE (idt[T_NMI], 0, GD_KT, trap_nmi, 0);
-	SETGATE (idt[T_BRKPT], 1, GD_KT, trap_brkpt, 3);
-	SETGATE (idt[T_OFLOW], 1, GD_KT, trap_oflow, 3);
+	SETGATE (idt[T_BRKPT], 0, GD_KT, trap_brkpt, 3);
+	SETGATE (idt[T_OFLOW], 0, GD_KT, trap_oflow, 3);
 	SETGATE (idt[T_BOUND], 0, GD_KT, trap_bound, 3);
 	SETGATE (idt[T_ILLOP], 0, GD_KT, trap_illop, 0);
 	SETGATE (idt[T_DEVICE], 0, GD_KT, trap_device, 0);
@@ -143,6 +157,22 @@ Without Challenge 1:
 	SETGATE (idt[T_ALIGN], 0, GD_KT, trap_align, 0);
 	SETGATE (idt[T_MCHK], 0, GD_KT, trap_mchk, 0);
 	SETGATE (idt[T_SIMDERR], 0, GD_KT, trap_simderr, 0);
+	SETGATE (idt[IRQ_OFFSET+0], 0, GD_KT, trap_irq0, 0);
+	SETGATE (idt[IRQ_OFFSET+1], 0, GD_KT, trap_irq1, 0);
+	SETGATE (idt[IRQ_OFFSET+2], 0, GD_KT, trap_irq2, 0);
+	SETGATE (idt[IRQ_OFFSET+3], 0, GD_KT, trap_irq3, 0);
+	SETGATE (idt[IRQ_OFFSET+4], 0, GD_KT, trap_irq4, 0);
+	SETGATE (idt[IRQ_OFFSET+5], 0, GD_KT, trap_irq5, 0);
+	SETGATE (idt[IRQ_OFFSET+6], 0, GD_KT, trap_irq6, 0);
+	SETGATE (idt[IRQ_OFFSET+7], 0, GD_KT, trap_irq7, 0);
+	SETGATE (idt[IRQ_OFFSET+8], 0, GD_KT, trap_irq8, 0);
+	SETGATE (idt[IRQ_OFFSET+9], 0, GD_KT, trap_irq9, 0);
+	SETGATE (idt[IRQ_OFFSET+10], 0, GD_KT, trap_irq10, 0);
+	SETGATE (idt[IRQ_OFFSET+11], 0, GD_KT, trap_irq11, 0);
+	SETGATE (idt[IRQ_OFFSET+12], 0, GD_KT, trap_irq12, 0);
+	SETGATE (idt[IRQ_OFFSET+13], 0, GD_KT, trap_irq13, 0);
+	SETGATE (idt[IRQ_OFFSET+14], 0, GD_KT, trap_irq14, 0);
+	SETGATE (idt[IRQ_OFFSET+15], 0, GD_KT, trap_irq15, 0);
 	SETGATE (idt[T_SYSCALL], 0, GD_KT, trap_syscall, 3);
 
 #endif
@@ -212,7 +242,10 @@ trap_dispatch(struct Trapframe *tf)
 	// LAB 3: Your code here.
 	
 	switch (tf->tf_trapno) {
-#if defined LAB4_CHALLENGE4
+		case IRQ_OFFSET+IRQ_TIMER:
+			sched_yield();
+			return ;
+#ifdef LAB4_CHALLENGE4
 		case T_DIVIDE:
 			divide_by_zero_handler(tf);
 			return ;
@@ -368,7 +401,7 @@ page_fault_handler(struct Trapframe *tf)
 }
 
 
-#if defined LAB4_CHALLENGE4
+#ifdef LAB4_CHALLENGE4
 void
 divide_by_zero_handler(struct Trapframe * tf)
 {

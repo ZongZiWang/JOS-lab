@@ -3,6 +3,8 @@
 #include <inc/string.h>
 #include <inc/lib.h>
 
+#include <inc/challenge.h>
+
 // PTE_COW marks copy-on-write page table entries.
 // It is one of the bits explicitly allocated to user processes (PTE_AVAIL).
 #define PTE_COW		0x800
@@ -77,10 +79,15 @@ duppage(envid_t envid, unsigned pn)
 
 	if ((pte & PTE_P) == 0 || (pte & PTE_U) == 0) panic("lib/fork.c/duppage(): pte unpresent or unuser!");
 	if ((pte & PTE_COW) == PTE_COW || (pte & PTE_W) == PTE_W) {
+#ifdef LAB4_CHALLENGE6
+		r = sys_page_map_update_perm(0, addr, envid, addr, PTE_COW|PTE_P|PTE_U);
+		if (r < 0) panic("lib/fork.c/duppage(): COW addr %08x's page_map from envid %08x to envid %08x and envid %08x failed.\n", addr, sys_getenvid(), envid, sys_getenvid());
+#else
 		r = sys_page_map(0, addr, envid, addr, PTE_COW|PTE_P|PTE_U);
 		if (r < 0) panic("lib/fork.c/duppage(): COW addr %08x's page_map from envid %08x to envid %08x failed.\n", addr, sys_getenvid(), envid);
 		r = sys_page_map(0, addr, 0, addr, PTE_COW|PTE_P|PTE_U);
 		if (r < 0) panic("lib/fork.c/duppage(): COW addr %08x's page_map from envid %08x to envid %08x failed.\n", addr, sys_getenvid(), sys_getenvid());
+#endif
 	} else {
 		r = sys_page_map(0, addr, envid, addr, PTE_P|PTE_U);
 		if (r < 0) panic("lib/fork.c/duppage(): READONLY addr %08x's page_map from envid %08x to envid %08x failed.\n", addr, sys_getenvid(), envid);
@@ -90,7 +97,6 @@ duppage(envid_t envid, unsigned pn)
 
 	// LAB 4: Your code here.
 	panic("duppage not implemented");
-	return 0;
 }
 
 //
@@ -128,12 +134,17 @@ fork(void)
 		if ((vpd[VPD(i)] & PTE_P) && (vpt[VPN(i)] & PTE_P) && (vpt[VPN(i)] & PTE_U)) duppage(envid, VPN(i));
 	}
 	
+#ifdef LAB4_CHALLENGE6
+	int r = sys_uxstack_pgfault_status(envid, (void *)(UXSTACKTOP-PGSIZE), PTE_P|PTE_U|PTE_W, _pgfault_upcall, ENV_RUNNABLE);
+	if (r < 0) panic("lib/fork.c/fork(): sys uxstack alloc/set pgfault upcall/set status failed: %e", r);
+#else
 	int r = sys_page_alloc(envid, (void *)(UXSTACKTOP-PGSIZE), PTE_P|PTE_U|PTE_W);
 	if (r < 0) panic("lib/fork.c/fork(): sys page alloc for child UXSTACK failed: %e", r);
 	sys_env_set_pgfault_upcall(envid, _pgfault_upcall);
 		
 	r = sys_env_set_status(envid, ENV_RUNNABLE);
 	if (r < 0) panic("lib/fork.c/fork(): sys env set status failed. %e", r);
+#endif
 
 	return envid;
 	
@@ -145,6 +156,48 @@ fork(void)
 int
 sfork(void)
 {
+#ifdef LAB4_CHALLENGE5
+	set_pgfault_handler(pgfault);
+
+	envid_t envid = sys_exofork();
+	if (envid < 0) panic("lib/fork.c/fork(): sys exofork failed. %e", envid);
+
+	if (envid == 0) {
+		env = &envs[ENVX(sys_getenvid())];
+		return 0;
+	}
+
+	uintptr_t i;
+	int r;
+
+	for (i = 0; i < USTACKTOP-PGSIZE; i += PGSIZE) {
+		if ((vpd[VPD(i)] & PTE_P) && (vpt[VPN(i)] & PTE_P) && (vpt[VPN(i)] & PTE_U)) {
+			void * addr = (void *) i;
+			pte_t pte = vpt[VPN(i)];
+			if ((pte & PTE_P) == 0 || (pte & PTE_U) == 0) panic("lib/fork.c/sfork(): pte unpresent or unuser!");
+			if ((pte & PTE_COW) == PTE_COW || (pte & PTE_W) == PTE_W) {
+				r = sys_page_map(0, addr, envid, addr, PTE_W|PTE_P|PTE_U);
+				if (r < 0) panic("lib/fork.c/sfork(): READWRITE addr %08x's page_map from envid %08x to envid %08x failed.\n", addr, sys_getenvid(), envid);
+			} else {
+				r = sys_page_map(0, addr, envid, addr, PTE_P|PTE_U);
+				if (r < 0) panic("lib/fork.c/sfork(): READONLY addr %08x's page_map from envid %08x to envid %08x failed.\n", addr, sys_getenvid(), envid);
+			}
+		}
+	
+	}
+	for (i = USTACKTOP-PGSIZE; i < UXSTACKTOP-PGSIZE; i += PGSIZE) {
+		if ((vpd[VPD(i)] & PTE_P) && (vpt[VPN(i)] & PTE_P) && (vpt[VPN(i)] & PTE_U)) duppage(envid, VPN(i));
+	}
+	
+	r = sys_page_alloc(envid, (void *)(UXSTACKTOP-PGSIZE), PTE_P|PTE_U|PTE_W);
+	if (r < 0) panic("lib/fork.c/sfork(): sys page alloc for child UXSTACK failed: %e", r);
+	sys_env_set_pgfault_upcall(envid, _pgfault_upcall);
+		
+	r = sys_env_set_status(envid, ENV_RUNNABLE);
+	if (r < 0) panic("lib/fork.c/sfork(): sys env set status failed. %e", r);
+
+	return envid;
+#endif
 	panic("sfork not implemented");
 	return -E_INVAL;
 }

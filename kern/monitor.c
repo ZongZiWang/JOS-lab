@@ -16,6 +16,8 @@
 
 #include <kern/env.h>
 
+#include <inc/challenge.h>
+
 #define CMDBUF_SIZE	80	// enough for one VGA text line
 
 
@@ -30,10 +32,15 @@ static struct Command commands[] = {
 	{ "help", "Display this list of commands", mon_help },
 	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
 	{ "backtrace", "Show the Back Trace of the current calling status", mon_backtrace },
+#ifdef LAB1_CHALLENGE1
 	{ "showcolor", "Display information about the color", mon_showcolor },
+#endif
+#ifdef LAB2_CHALLENGE5
 	{ "alloc_page", "Allocate Page at certain Physical Address", mon_alloc_page },
 	{ "page_status", "Display the status of Page at Given Physical Address", mon_page_status },
 	{ "free_page", "Free Page at Given Physical Address", mon_free_page },
+#endif
+#ifdef LAB2_CHALLENGE2
 	{ "showmappings", "Show the mappings from the Given Range of Virtual Addresses to the corresponding physical pages", mon_showmappings },
 	{ "set_user", "Set to the User permissions of the mapping in the Given Virtual address space", mon_set_user },
 	{ "clear_user", "Clear the User permissions of the mapping in the Given Virtual address space", mon_clear_user },
@@ -46,8 +53,11 @@ static struct Command commands[] = {
 	{ "change_present", "Change the Present permissions of the mapping in the Given Virtual address space", mon_change_present },
 	{ "dump_contents_pa", "Dump the contents of a range of memory given a physical address range", mon_dump_contents_pa },
 	{ "dump_contents_va", "Dump the contents of a range of memory given a virtual address range", mon_dump_contents_va },
+#endif
+#ifdef LAB3_CHALLENGE2
 	{ "continue", "continue excution from the current location", mon_continue },
 	{ "stepi", "Step one instruction exactly", mon_stepi },
+#endif
 };
 #define NCOMMANDS (sizeof(commands)/sizeof(commands[0]))
 
@@ -65,6 +75,7 @@ mon_help(int argc, char **argv, struct Trapframe *tf)
 	return 0;
 }
 
+#ifdef LAB1_CHALLENGE1
 int
 mon_showcolor(int argc, char **argv, struct Trapframe *tf)
 {
@@ -97,7 +108,9 @@ mon_showcolor(int argc, char **argv, struct Trapframe *tf)
 	}
 	return 0;
 }
+#endif
 
+#ifdef LAB2_CHALLENGE5
 int isspace(int c)
 {
 	if (c == ' ') return 1;
@@ -177,8 +190,9 @@ int mon_free_page(int argc, char **argv, struct Trapframe *tf)
 	cprintf("Freeing Pages at Physical Address 0x%x succeeded!\n", pa);
 	return 0;
 }
+#endif
 
-
+#ifdef LAB2_CHALLENGE2
 int mon_showmappings(int argc, char **argv, struct Trapframe *tf)
 {
 	if (argc != 3) return -E_INVAL;
@@ -199,9 +213,6 @@ int mon_showmappings(int argc, char **argv, struct Trapframe *tf)
 			} else {
 				if (*pte & PTE_W) cprintf("User None, Sys RW\n");
 				else cprintf("User None, Sys R\n");
-			}
-			if (*pte & PTE_PS) {
-				now += EXTPGSIZE-PGSIZE;
 			}
 		} else {
 			cprintf("No Pages at Virtual Address 0x%x!\n", now);
@@ -360,7 +371,7 @@ int mon_dump_contents_va(int argc, char **argv, struct Trapframe *tf)
 			physaddr_t pa = page2pa(pp);
 			cprintf("Page %d at Virtual Address 0x%x:\n", PPN(now), now);
 			cprintf("%08x: ", now);
-			for (next = now; next <= end && next < ROUNDUP(now+1, *pte&PTE_PS?EXTPGSIZE:PGSIZE); next++) {
+			for (next = now; next <= end && next < ROUNDUP(now+1, PGSIZE); next++) {
 				if (next % 4 == 0) cprintf("\n%08x: ", next);
 				cprintf("0x%08x ", *((uint32_t*)next));
 			}
@@ -373,8 +384,9 @@ int mon_dump_contents_va(int argc, char **argv, struct Trapframe *tf)
 	}
 	return 0;
 }
+#endif
 
-
+#ifdef LAB3_CHALLENGE2
 int mon_continue(int argc, char **argv, struct Trapframe *tf)
 {
 	if (tf == NULL) {
@@ -402,10 +414,7 @@ int mon_stepi(int argc, char **argv, struct Trapframe *tf)
 	
 	return 0;
 }
-
-
-
-
+#endif
 
 int	
 mon_kerninfo(int argc, char **argv, struct Trapframe *tf)

@@ -13,6 +13,8 @@
 #include <kern/monitor.h>
 #include <kern/sched.h>
 
+#include <inc/challenge.h>
+
 struct Env *envs = NULL;		// All environments
 struct Env *curenv = NULL;		// The current env
 static struct Env_list env_free_list;	// Free list
@@ -193,6 +195,15 @@ env_alloc(struct Env **newenv_store, envid_t parent_id)
 
 	// Enable interrupts while in user mode.
 	// LAB 4: Your code here.
+
+#ifdef LAB4_CHALLENGE1
+	e->env_priority = PRIORITY_DEFAULT;
+#endif
+#ifdef LAB4_CHALLENGE7
+	e->env_ipc_sended = 0;
+#endif
+
+	e->env_tf.tf_eflags |= FL_IF;  
 
 	// Clear the page fault handler until user installs one.
 	e->env_pgfault_upcall = 0;

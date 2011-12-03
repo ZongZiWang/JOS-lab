@@ -1,6 +1,8 @@
 #ifndef JOS_INC_TRAP_H
 #define JOS_INC_TRAP_H
 
+#include <inc/challenge.h>
+
 // Trap numbers
 // These are processor defined:
 #define T_DIVIDE     0		// divide error

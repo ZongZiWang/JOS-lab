@@ -1,7 +1,7 @@
 #ifndef JOS_INC_SYSCALL_H
 #define JOS_INC_SYSCALL_H
 
-#define LAB4_CHALLENGE4
+#include <inc/challenge.h>
 
 /* system call numbers */
 enum
@@ -19,10 +19,20 @@ enum
 	SYS_yield,
 	SYS_ipc_try_send,
 	SYS_ipc_recv,
-#if defined LAB4_CHALLENGE4
+#ifdef LAB4_CHALLENGE1
+	SYS_env_set_priority,
+#endif
+#ifdef LAB4_CHALLENGE3
+	SYS_env_restore,
+#endif
+#ifdef LAB4_CHALLENGE4
 	SYS_env_set_gpfault_upcall,
 	SYS_env_set_divide_upcall,
 	SYS_env_set_illop_upcall,
+#endif
+#ifdef LAB4_CHALLENGE6
+	SYS_page_map_update_perm,
+	SYS_uxstack_pgfault_status,
 #endif
 	NSYSCALLS
 };
