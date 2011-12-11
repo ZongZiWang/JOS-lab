@@ -44,6 +44,11 @@ bc_pgfault(struct UTrapframe *utf)
 	//
 	// LAB 5: Your code here
 
+	addr = ROUNDDOWN(addr, BLKSIZE);
+	//must page alloc first
+	if ((r = sys_page_alloc(0, addr, PTE_USER)) < 0) panic("bc_pgfault(): sys page alloc failed! %e", r);
+	if ((r = ide_read(blockno * BLKSECTS, addr, BLKSECTS)) < 0) panic("bc_pgfault(): ide read failed! %e", r);
+
 	// Sanity check the block number. (exercise for the reader:
 	// why do we do this *after* reading the block in?)
 	if (super && blockno >= super->s_nblocks)
@@ -70,6 +75,16 @@ flush_block(void *addr)
 		panic("flush_block of bad va %08x", addr);
 
 	// LAB 5: Your code here.
+	
+	int r;
+	if (va_is_mapped(addr) && va_is_dirty(addr)) {
+		addr = ROUNDDOWN(addr, BLKSIZE);
+		if ((r = ide_write(blockno * BLKSECTS, addr, BLKSECTS)) < 0) panic("flush_block(): ide write failed! %e", r);
+		if ((r = sys_page_map(0, addr, 0, addr, PTE_USER)) < 0) panic("flush_block(): sys page map failed! %e", r);
+	}
+
+	return;
+
 	panic("flush_block not implemented");
 }
 

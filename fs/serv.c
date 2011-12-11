@@ -215,6 +215,16 @@ serve_read(envid_t envid, union Fsipc *ipc)
 	// Hint: Use file_read.
 	// Hint: The seek position is stored in the struct Fd.
 	// LAB 5: Your code here
+
+	struct OpenFile *o;
+	int r;
+
+	if ((r = openfile_lookup(envid, req->req_fileid, &o)) < 0) return r;
+	size_t req_n = req->req_n < PGSIZE ? req->req_n : PGSIZE;
+	if ((r = file_read(o->o_file, ret->ret_buf, req_n, o->o_fd->fd_offset)) < 0) return r;
+	o->o_fd->fd_offset += r;
+	return r;
+
 	panic("serve_read not implemented");
 }
 
@@ -229,6 +239,16 @@ serve_write(envid_t envid, struct Fsreq_write *req)
 		cprintf("serve_write %08x %08x %08x\n", envid, req->req_fileid, req->req_n);
 
 	// LAB 5: Your code here.
+	
+	struct OpenFile *o;
+	int r;
+
+	if ((r = openfile_lookup(envid, req->req_fileid, &o)) < 0) return r;
+	size_t req_n = req->req_n < PGSIZE ? req->req_n : PGSIZE;
+	if ((r = file_write(o->o_file, req->req_buf, req_n, o->o_fd->fd_offset)) < 0) return r;
+	o->o_fd->fd_offset += r;
+	return r;
+
 	panic("serve_write not implemented");
 }
 

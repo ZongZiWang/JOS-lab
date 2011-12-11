@@ -5,7 +5,7 @@
 // function.
 
 #include <inc/lib.h>
-
+#include <inc/challenge.h>
 
 // Assembly language pgfault entrypoint defined in lib/pfentry.S.
 extern void _pgfault_upcall(void);
@@ -27,9 +27,17 @@ set_pgfault_handler(void (*handler)(struct UTrapframe *utf))
 	int r;
 
 	if (_pgfault_handler == 0) {
+#ifdef LAB4_CHALLENGE6
+		r = sys_uxstack_pgfault_status(0, (void *)(UXSTACKTOP-PGSIZE), PTE_P|PTE_U|PTE_W, _pgfault_upcall, ENV_NOT_SET);
+		if (r < 0) panic("set pgfault handler: %e", r);
+#else
+		r = sys_page_alloc(0, (void *)(UXSTACKTOP-PGSIZE), PTE_P|PTE_U|PTE_W);
+		if (r < 0) panic("set pgfault handler: %e", r);
+		sys_env_set_pgfault_upcall(0, _pgfault_upcall);
+#endif
 		// First time through!
 		// LAB 4: Your code here.
-		panic("set_pgfault_handler not implemented");
+		//panic("set_pgfault_handler not implemented");
 	}
 
 	// Save handler pointer for assembly to call.

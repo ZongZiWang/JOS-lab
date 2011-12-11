@@ -62,6 +62,22 @@ open(const char *path, int mode)
 	// If any step after fd_alloc fails, use fd_close to free the
 	// file descriptor.
 
+	struct Fd * fd;
+	int r;
+
+	if (strlen(path) >= MAXPATHLEN) return -E_BAD_PATH;
+	if ((r = fd_alloc(&fd)) < 0) return r;
+
+//	strcpy(fsipcbuf.open.req_path, path);
+	memmove(fsipcbuf.open.req_path, path, strlen(path)+1);
+	fsipcbuf.open.req_omode = mode;
+	if ((r = fsipc(FSREQ_OPEN, (void *) fd)) < 0) {
+//		fd_close(fd, 0);//TODO need this line?
+		return r;
+	}
+
+	return fd2num(fd);
+
 	// LAB 5: Your code here.
 	panic("open not implemented");
 }
@@ -94,6 +110,18 @@ devfile_read(struct Fd *fd, void *buf, size_t n)
 	// bytes read will be written back to fsipcbuf by the file
 	// system server.
 	// LAB 5: Your code here
+
+	int r;
+
+	fsipcbuf.read.req_fileid = fd->fd_file.id;
+	fsipcbuf.read.req_n = n;
+
+	if ((r = fsipc(FSREQ_READ, NULL)) < 0) return r;
+	// should memmove, not just pointer assignment
+	memmove(buf, fsipcbuf.readRet.ret_buf, r);
+
+	return r;
+
 	panic("devfile_read not implemented");
 }
 
@@ -110,6 +138,14 @@ devfile_write(struct Fd *fd, const void *buf, size_t n)
 	// remember that write is always allowed to write *fewer*
 	// bytes than requested.
 	// LAB 5: Your code here
+
+	fsipcbuf.write.req_fileid = fd->fd_file.id;
+	fsipcbuf.write.req_n = n < sizeof(fsipcbuf.write.req_buf) ? n : sizeof(fsipcbuf.write.req_buf);
+	// the following line, see above
+	memmove(fsipcbuf.write.req_buf, buf, n);
+
+	return fsipc(FSREQ_WRITE, NULL);
+
 	panic("devfile_write not implemented");
 }
 

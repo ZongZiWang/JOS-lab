@@ -43,7 +43,17 @@ KERN_BINFILES :=	user/idle \
 			user/writemotd \
 			user/icode \
 			user/hello \
-			fs/fs
+			fs/fs \
+			user/zongzi \
+			user/lab4divide \
+			user/lab4gpfault \
+			user/lab4illop \
+			user/lab4priorityhigh \
+			user/lab4prioritymid \
+			user/lab4prioritylow \
+			user/lab4prioritydefault \
+			user/sforktree \
+			user/lab4checkpoint
 
 KERN_OBJFILES := $(patsubst %.c, $(OBJDIR)/%.o, $(KERN_SRCFILES))
 KERN_OBJFILES := $(patsubst %.S, $(OBJDIR)/%.o, $(KERN_OBJFILES))

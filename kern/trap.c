@@ -12,15 +12,17 @@
 #include <kern/kclock.h>
 #include <kern/picirq.h>
 
+#include <inc/challenge.h>
+
 static struct Taskstate ts;
 
-/* Interrupt descriptor table.  (Must be built at run time because
+/* Interrupt d escriptor table.  (Must be built at run time because
  * shifted function addresses can't be represented in relocation records.)
  */
 struct Gatedesc idt[256] = { { 0 } };
 struct Pseudodesc idt_pd = {
 	sizeof(idt) - 1, (uint32_t) idt
-};
+}; 
 
 
 static const char *trapname(int trapno)
@@ -58,12 +60,122 @@ static const char *trapname(int trapno)
 }
 
 
+#ifdef LAB3_CHALLENGE1
+//Challenge 1
+extern struct Gatedesc myidt[256];
+//extern struct Pseudodesc myidt_pd;
+struct Pseudodesc myidt_pd = {
+	sizeof(myidt) - 1, (uint32_t) myidt
+};
+#endif
+
+
 void
 idt_init(void)
 {
 	extern struct Segdesc gdt[];
 	
 	// LAB 3: Your code here.
+
+#ifdef LAB3_CHALLENGE1
+/*
+===============================================
+After Challenge 1:
+===============================================
+*/
+	int i;
+	for (i = 0; i < 256; i++) {
+		if (*((uint32_t*)(myidt+i)) != 0) {
+			SETGATE(
+					idt[i],
+					*((uint16_t*)(myidt+i)+2),
+					GD_KT,
+					*((uint32_t*)(myidt+i)),
+					*((uint16_t*)(myidt+i)+3)
+				   );
+		}
+	}
+
+#else
+/*
+===============================================
+Without Challenge 1:
+===============================================
+*/
+	
+	extern void trap_divide();
+	extern void trap_debug();
+	extern void trap_nmi();
+	extern void trap_brkpt();
+	extern void trap_oflow();
+	extern void trap_bound();
+	extern void trap_illop();
+	extern void trap_device();
+	extern void trap_dblflt();
+	extern void trap_tss();
+	extern void trap_segnp();
+	extern void trap_stack();
+	extern void trap_gpflt();
+	extern void trap_pgflt();
+	extern void trap_fperr();
+	extern void trap_align();
+	extern void trap_mchk();
+	extern void trap_simderr();
+	extern void trap_irq0();
+	extern void trap_irq1();
+	extern void trap_irq2();
+	extern void trap_irq3();
+	extern void trap_irq4();
+	extern void trap_irq5();
+	extern void trap_irq6();
+	extern void trap_irq7();
+	extern void trap_irq8();
+	extern void trap_irq9();
+	extern void trap_irq10();
+	extern void trap_irq11();
+	extern void trap_irq12();
+	extern void trap_irq13();
+	extern void trap_irq14();
+	extern void trap_irq15();
+	extern void trap_syscall();
+	
+	SETGATE (idt[T_DIVIDE], 0, GD_KT, trap_divide, 0);
+	SETGATE (idt[T_DEBUG], 0, GD_KT, trap_debug, 0);
+	SETGATE (idt[T_NMI], 0, GD_KT, trap_nmi, 0);
+	SETGATE (idt[T_BRKPT], 0, GD_KT, trap_brkpt, 3);
+	SETGATE (idt[T_OFLOW], 0, GD_KT, trap_oflow, 3);
+	SETGATE (idt[T_BOUND], 0, GD_KT, trap_bound, 3);
+	SETGATE (idt[T_ILLOP], 0, GD_KT, trap_illop, 0);
+	SETGATE (idt[T_DEVICE], 0, GD_KT, trap_device, 0);
+	SETGATE (idt[T_DBLFLT], 0, GD_KT, trap_dblflt, 0);
+	SETGATE (idt[T_TSS], 0, GD_KT, trap_tss, 0);
+	SETGATE (idt[T_SEGNP], 0, GD_KT, trap_segnp, 0);
+	SETGATE (idt[T_STACK], 0, GD_KT, trap_stack, 0);
+	SETGATE (idt[T_GPFLT], 0, GD_KT, trap_gpflt, 0);
+	SETGATE (idt[T_PGFLT], 0, GD_KT, trap_pgflt, 0);
+	SETGATE (idt[T_FPERR], 0, GD_KT, trap_fperr, 0);
+	SETGATE (idt[T_ALIGN], 0, GD_KT, trap_align, 0);
+	SETGATE (idt[T_MCHK], 0, GD_KT, trap_mchk, 0);
+	SETGATE (idt[T_SIMDERR], 0, GD_KT, trap_simderr, 0);
+	SETGATE (idt[IRQ_OFFSET+0], 0, GD_KT, trap_irq0, 0);
+	SETGATE (idt[IRQ_OFFSET+1], 0, GD_KT, trap_irq1, 0);
+	SETGATE (idt[IRQ_OFFSET+2], 0, GD_KT, trap_irq2, 0);
+	SETGATE (idt[IRQ_OFFSET+3], 0, GD_KT, trap_irq3, 0);
+	SETGATE (idt[IRQ_OFFSET+4], 0, GD_KT, trap_irq4, 0);
+	SETGATE (idt[IRQ_OFFSET+5], 0, GD_KT, trap_irq5, 0);
+	SETGATE (idt[IRQ_OFFSET+6], 0, GD_KT, trap_irq6, 0);
+	SETGATE (idt[IRQ_OFFSET+7], 0, GD_KT, trap_irq7, 0);
+	SETGATE (idt[IRQ_OFFSET+8], 0, GD_KT, trap_irq8, 0);
+	SETGATE (idt[IRQ_OFFSET+9], 0, GD_KT, trap_irq9, 0);
+	SETGATE (idt[IRQ_OFFSET+10], 0, GD_KT, trap_irq10, 0);
+	SETGATE (idt[IRQ_OFFSET+11], 0, GD_KT, trap_irq11, 0);
+	SETGATE (idt[IRQ_OFFSET+12], 0, GD_KT, trap_irq12, 0);
+	SETGATE (idt[IRQ_OFFSET+13], 0, GD_KT, trap_irq13, 0);
+	SETGATE (idt[IRQ_OFFSET+14], 0, GD_KT, trap_irq14, 0);
+	SETGATE (idt[IRQ_OFFSET+15], 0, GD_KT, trap_irq15, 0);
+	SETGATE (idt[T_SYSCALL], 0, GD_KT, trap_syscall, 3);
+
+#endif
 
 	// Setup a TSS so that we get the right stack
 	// when we trap to the kernel.
@@ -114,9 +226,6 @@ print_regs(struct PushRegs *regs)
 static void
 trap_dispatch(struct Trapframe *tf)
 {
-	// Handle processor exceptions.
-	// LAB 3: Your code here.
-	
 	// Handle clock interrupts.
 	// LAB 4: Your code here.
 
@@ -128,16 +237,55 @@ trap_dispatch(struct Trapframe *tf)
 		print_trapframe(tf);
 		return;
 	}
+	
+	// Handle processor exceptions.
+	// LAB 3: Your code here.
+	
+	switch (tf->tf_trapno) {
+		case IRQ_OFFSET+IRQ_TIMER:
+			sched_yield();
+			return ;
+#ifdef LAB4_CHALLENGE4
+		case T_DIVIDE:
+			divide_by_zero_handler(tf);
+			return ;
+		case T_GPFLT:
+			general_protection_fault_handler(tf);
+			return ;
+		case T_ILLOP:
+			illegal_opcode_handler(tf);
+			return ;
+#endif
+		case T_PGFLT:
+			page_fault_handler(tf);
+			return ;
+		case T_BRKPT:
+			monitor(tf);
+			return ;
+		case T_SYSCALL:
+			tf->tf_regs.reg_eax = syscall(
+					tf->tf_regs.reg_eax,
+					tf->tf_regs.reg_edx, 
+					tf->tf_regs.reg_ecx,
+					tf->tf_regs.reg_ebx,
+					tf->tf_regs.reg_edi,
+					tf->tf_regs.reg_esi);
+			if (tf->tf_regs.reg_eax < 0) panic("trap dispatch: System Call fails");
+			return ;
+		default:
 
-
-	// Unexpected trap: The user process or the kernel has a bug.
-	print_trapframe(tf);
-	if (tf->tf_cs == GD_KT)
-		panic("unhandled trap in kernel");
-	else {
-		env_destroy(curenv);
-		return;
+			// Unexpected trap: The user process or the kernel has a bug.
+			print_trapframe(tf);
+			if (tf->tf_cs == GD_KT)
+				panic("unhandled trap in kernel");
+			else {
+				env_destroy(curenv);
+				return;
+			}
 	}
+
+	return ;
+
 }
 
 void
@@ -188,6 +336,8 @@ page_fault_handler(struct Trapframe *tf)
 	
 	// LAB 3: Your code here.
 
+	if ((tf->tf_cs & 3) == 0) panic("page fault handler: page fault in kernel-mode!");
+
 	// We've already handled kernel-mode exceptions, so if we get here,
 	// the page fault happened in user mode.
 
@@ -218,6 +368,28 @@ page_fault_handler(struct Trapframe *tf)
 	//   user_mem_assert() and env_run() are useful here.
 	//   To change what the user environment runs, modify 'curenv->env_tf'
 	//   (the 'tf' variable points at 'curenv->env_tf').
+	
+	if (curenv->env_pgfault_upcall != NULL) {
+		struct UTrapframe * utf;
+		if (tf->tf_esp <= UXSTACKTOP-1 && tf->tf_esp >= UXSTACKTOP-PGSIZE)
+			utf = (struct UTrapframe *)(tf->tf_esp - sizeof(struct Trapframe) - 4);
+		else utf = (struct UTrapframe *)(UXSTACKTOP - sizeof(struct Trapframe));
+
+		user_mem_assert(curenv, (void *)utf, sizeof(struct UTrapframe), (PTE_U|PTE_W));
+
+		utf->utf_esp = tf->tf_esp;
+		utf->utf_eflags = tf->tf_eflags;
+		utf->utf_eip = tf->tf_eip;
+		utf->utf_regs = tf->tf_regs;
+		utf->utf_err = tf->tf_err;
+		utf->utf_fault_va = fault_va;
+
+		curenv->env_tf.tf_esp = (uintptr_t) utf;
+		curenv->env_tf.tf_eip = (uintptr_t) curenv->env_pgfault_upcall;
+		
+		env_run(curenv);
+	}
+
 
 	// LAB 4: Your code here.
 
@@ -228,3 +400,116 @@ page_fault_handler(struct Trapframe *tf)
 	env_destroy(curenv);
 }
 
+
+#ifdef LAB4_CHALLENGE4
+void
+divide_by_zero_handler(struct Trapframe * tf)
+{
+
+	uint32_t fault_va;
+	fault_va = rcr2();
+
+	if ((tf->tf_cs & 3) == 0) panic("divide-by-zero handler: divided by zero in kernel-mode!");
+	
+	if (curenv->env_divide_upcall != NULL) {
+		struct UTrapframe * utf;
+		if (tf->tf_esp <= UXSTACKTOP-1 && tf->tf_esp >= UXSTACKTOP-PGSIZE)
+			utf = (struct UTrapframe *)(tf->tf_esp - sizeof(struct Trapframe) - 4);
+		else utf = (struct UTrapframe *)(UXSTACKTOP - sizeof(struct Trapframe));
+
+		user_mem_assert(curenv, (void *)utf, sizeof(struct UTrapframe), (PTE_U|PTE_W));
+
+		utf->utf_esp = tf->tf_esp;
+		utf->utf_eflags = tf->tf_eflags;
+		utf->utf_eip = tf->tf_eip;
+		utf->utf_regs = tf->tf_regs;
+		utf->utf_err = tf->tf_err;
+		utf->utf_fault_va = fault_va;
+
+		curenv->env_tf.tf_esp = (uintptr_t) utf;
+		curenv->env_tf.tf_eip = (uintptr_t) curenv->env_divide_upcall;
+		
+		env_run(curenv);
+	}
+
+	cprintf("[%08x] user divide by zero ip %08x\n",
+		curenv->env_id, tf->tf_eip);
+	print_trapframe(tf);
+	env_destroy(curenv);
+
+}
+
+void
+general_protection_fault_handler(struct Trapframe * tf)
+{
+
+	uint32_t fault_va;
+	fault_va = rcr2();
+
+	if ((tf->tf_cs & 3) == 0) panic("general protection fault handler: general protection fault in kernel-mode!");
+	
+	if (curenv->env_gpfault_upcall != NULL) {
+		struct UTrapframe * utf;
+		if (tf->tf_esp <= UXSTACKTOP-1 && tf->tf_esp >= UXSTACKTOP-PGSIZE)
+			utf = (struct UTrapframe *)(tf->tf_esp - sizeof(struct Trapframe) - 4);
+		else utf = (struct UTrapframe *)(UXSTACKTOP - sizeof(struct Trapframe));
+
+		user_mem_assert(curenv, (void *)utf, sizeof(struct UTrapframe), (PTE_U|PTE_W));
+
+		utf->utf_esp = tf->tf_esp;
+		utf->utf_eflags = tf->tf_eflags;
+		utf->utf_eip = tf->tf_eip;
+		utf->utf_regs = tf->tf_regs;
+		utf->utf_err = tf->tf_err;
+		utf->utf_fault_va = fault_va;
+
+		curenv->env_tf.tf_esp = (uintptr_t) utf;
+		curenv->env_tf.tf_eip = (uintptr_t) curenv->env_gpfault_upcall;
+		
+		env_run(curenv);
+	}
+
+	cprintf("[%08x] user general protection fault ip %08x\n",
+		curenv->env_id, tf->tf_eip);
+	print_trapframe(tf);
+	env_destroy(curenv);
+
+}
+
+void
+illegal_opcode_handler(struct Trapframe * tf)
+{
+
+	uint32_t fault_va;
+	fault_va = rcr2();
+
+	if ((tf->tf_cs & 3) == 0) panic("illegal opcode handler: illegal opcode in kernel-mode!");
+	
+	if (curenv->env_illop_upcall != NULL) {
+		struct UTrapframe * utf;
+		if (tf->tf_esp <= UXSTACKTOP-1 && tf->tf_esp >= UXSTACKTOP-PGSIZE)
+			utf = (struct UTrapframe *)(tf->tf_esp - sizeof(struct Trapframe) - 4);
+		else utf = (struct UTrapframe *)(UXSTACKTOP - sizeof(struct Trapframe));
+
+		user_mem_assert(curenv, (void *)utf, sizeof(struct UTrapframe), (PTE_U|PTE_W));
+
+		utf->utf_esp = tf->tf_esp;
+		utf->utf_eflags = tf->tf_eflags;
+		utf->utf_eip = tf->tf_eip;
+		utf->utf_regs = tf->tf_regs;
+		utf->utf_err = tf->tf_err;
+		utf->utf_fault_va = fault_va;
+
+		curenv->env_tf.tf_esp = (uintptr_t) utf;
+		curenv->env_tf.tf_eip = (uintptr_t) curenv->env_illop_upcall;
+		
+		env_run(curenv);
+	}
+
+	cprintf("[%08x] user illegal opcode ip %08x\n",
+		curenv->env_id, tf->tf_eip);
+	print_trapframe(tf);
+	env_destroy(curenv);
+
+}
+#endif

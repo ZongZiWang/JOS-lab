@@ -61,6 +61,19 @@ alloc_block(void)
 	// super->s_nblocks blocks in the disk altogether.
 
 	// LAB 5: Your code here.
+
+	int blockno;
+	for (blockno = 0; blockno < super->s_nblocks; blockno++) {
+		if (block_is_free(blockno)) {
+			//not free_block, but allocate_block
+			bitmap[blockno/32] &= ~(1<<(blockno%32));
+			flush_block(bitmap);
+			return blockno;
+		}
+	}
+
+	return -E_NO_DISK;
+
 	panic("alloc_block not implemented");
 	return -E_NO_DISK;
 }
@@ -131,6 +144,25 @@ fs_init(void)
 static int
 file_block_walk(struct File *f, uint32_t filebno, uint32_t **ppdiskbno, bool alloc)
 {
+	int r;
+
+	if (filebno >= NDIRECT + NINDIRECT) return -E_INVAL;
+	if (filebno < NDIRECT) {
+		*ppdiskbno = &(f->f_direct[filebno]);
+	} else {
+		if (!f->f_indirect) {
+			if (!alloc) return -E_NOT_FOUND;
+			if ((r = alloc_block()) < 0) return r;
+			f->f_indirect = r;
+			//must clear the block I allocate via the va of disk block
+			memset(diskaddr(f->f_indirect), 0, BLKSIZE);
+			//must write back the contents via the va of disk block
+			flush_block(diskaddr(f->f_indirect));
+		}
+		*ppdiskbno = (uint32_t *)((diskaddr)(f->f_indirect)) + filebno-NDIRECT;
+	}
+	return 0;
+
 	// LAB 5: Your code here.
 	panic("file_block_walk not implemented");
 }
@@ -146,6 +178,22 @@ file_block_walk(struct File *f, uint32_t filebno, uint32_t **ppdiskbno, bool all
 int
 file_get_block(struct File *f, uint32_t filebno, char **blk)
 {
+	int r;
+	uint32_t * pdiskbno;
+	//alloc must be set to be 1
+	if ((r = file_block_walk(f, filebno, &pdiskbno, 1)) < 0) return r;
+	if (!(*pdiskbno)) {
+		if ((r = alloc_block()) < 0) return r;
+		*pdiskbno = r;
+		//must clear the block I allocate via the va of disk block
+		memset(diskaddr(*pdiskbno), 0, BLKSIZE);
+		//must write back the contents via the va of disk block
+		flush_block(diskaddr(*pdiskbno));
+	}
+	*blk = diskaddr(*pdiskbno);
+
+	return 0;
+
 	// LAB 5: Your code here.
 	panic("file_get_block not implemented");
 }
