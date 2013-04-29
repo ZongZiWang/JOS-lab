@@ -22,7 +22,8 @@ LIB_SRCFILES :=		$(LIB_SRCFILES) \
 			lib/illop.c \
 			lib/ioentry.S \
 			lib/priority.c \
-			lib/checkpoint.c
+			lib/checkpoint.c \
+			lib/mmap.c
 
 LIB_SRCFILES :=		$(LIB_SRCFILES) \
 			lib/fd.c \

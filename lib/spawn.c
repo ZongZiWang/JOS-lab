@@ -88,6 +88,14 @@ spawn(const char *prog, const char **argv)
 		return r;
 	fd = r;
 
+#ifdef LAB5_CHALLENGE6
+	elf = (struct Elf*) mmap(elf_buf, sizeof(elf_buf), PROT_READ, MAP_SHARED, fd, 0);
+	if (elf->e_magic != ELF_MAGIC) {
+		close(fd);
+		cprintf("elf magic %08x want %08x\n", elf->e_magic, ELF_MAGIC);
+		return -E_NOT_EXEC;
+	}
+#else
 	// Read elf header
 	elf = (struct Elf*) elf_buf;
 	if (read(fd, elf_buf, sizeof(elf_buf)) != sizeof(elf_buf)
@@ -96,6 +104,7 @@ spawn(const char *prog, const char **argv)
 		cprintf("elf magic %08x want %08x\n", elf->e_magic, ELF_MAGIC);
 		return -E_NOT_EXEC;
 	}
+#endif
 
 	// Create new child environment
 	if ((r = sys_exofork()) < 0)
@@ -255,10 +264,15 @@ map_segment(envid_t child, uintptr_t va, size_t memsz,
 			// from file
 			if ((r = sys_page_alloc(0, UTEMP, PTE_P|PTE_U|PTE_W)) < 0)
 				return r;
+#ifdef LAB5_CHALLENGE6
+			if ((mmap(UTEMP, MIN(PGSIZE, filesz-i), PROT_READ, MAP_SHARED, fd, fileoffset + i)) == MAP_FAILED)
+				panic("lib/spawn.c/map_segment(): mmap: %e", E_INVAL);
+#else
 			if ((r = seek(fd, fileoffset + i)) < 0)
 				return r;
 			if ((r = read(fd, UTEMP, MIN(PGSIZE, filesz-i))) < 0)
 				return r;
+#endif
 			if ((r = sys_page_map(0, UTEMP, child, (void*) (va + i), perm)) < 0)
 				panic("spawn: sys_page_map data: %e", r);
 			sys_page_unmap(0, UTEMP);

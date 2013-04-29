@@ -10,7 +10,8 @@ FSOFILES := 		$(OBJDIR)/fs/ide.o \
 USERAPPS := 		$(OBJDIR)/user/init
 
 FSIMGTXTFILES :=	fs/newmotd \
-			fs/motd
+			fs/motd \
+			fs/mmapfile
 
 
 
